@@ -263,7 +263,7 @@
           <input type="checkbox" v-model="sixSixRules[activeSet]" />
         </div>
         <div class="screenshot">
-          <button @click="takeScreenshot">test4 Screen Shot</button>
+          <button @click="takeScreenshot">test5 Screen Shot</button>
         </div>
       </div>
 
@@ -967,47 +967,49 @@
               return;
             }
 
-            // スクリーンショットのために背景色と文字色を一時的に変更
+            // スクリーンショットのために一時的にスタイルを変更する
             const originalBodyBg = document.body.style.backgroundColor;
             const originalBodyColor = document.body.style.color;
-            document.body.style.backgroundColor = "#ffffff";
-            document.body.style.color = "#000000";
-
-            // .score要素の文字色も一時的に変更
             const scoreElement = document.querySelector(".score");
             const originalScoreColor = scoreElement?.style.color;
+
+            document.body.style.backgroundColor = "#ffffff";
+            document.body.style.color = "#000000";
             if (scoreElement) {
               scoreElement.style.color = "#000000";
             }
 
-            html2canvas(appElement)
+            // html2canvasの処理を開始
+            html2canvas(appElement, {
+              useCORS: true, // CORSを有効にする
+              allowTaint: false, // 汚染されたキャンバスを許可しない
+            })
               .then((canvas) => {
-                // 生成した画像をData URLとして取得
                 const dataUrl = canvas.toDataURL("image/png");
 
                 // 新しいウィンドウで画像を表示
                 const newWindow = window.open();
-                newWindow.document.write(
-                  `<img src="${dataUrl}" style="max-width: 100%;">`
-                );
-                newWindow.document.title = "得失点チェックシート";
-
-                // 元のスタイルに戻す
-                document.body.style.backgroundColor = originalBodyBg;
-                document.body.style.color = originalBodyColor;
-                if (scoreElement) {
-                  scoreElement.style.color = originalScoreColor;
-                }
-
-                // iOS Safariでの操作を促すアラート
-                if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-                  alert("画像を長押しして保存してください。");
+                if (newWindow) {
+                  newWindow.document.write(
+                    `<img src="${dataUrl}" style="max-width: 100%;">`
+                  );
+                  newWindow.document.title = "得失点チェックシート";
+                  // iOS Safariでの操作を促すアラート
+                  if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                    alert("画像を長押しして保存してください。");
+                  }
+                } else {
+                  alert(
+                    "新しいウィンドウを開くことができませんでした。ポップアップブロックを確認してください。"
+                  );
                 }
               })
               .catch((err) => {
                 console.error("html2canvas error:", err);
                 alert("スクリーンショットの生成中にエラーが発生しました。");
-                // エラー発生時も元のスタイルに戻す
+              })
+              .finally(() => {
+                // 成功・失敗にかかわらず、元のスタイルに戻す
                 document.body.style.backgroundColor = originalBodyBg;
                 document.body.style.color = originalBodyColor;
                 if (scoreElement) {
