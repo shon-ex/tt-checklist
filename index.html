@@ -989,14 +989,24 @@
             appElement.style.color = "#000000";
             scoreElement.style.color = "#000000";
 
-            html2canvas(appElement).then((canvas) => {
-              const dataUrl = canvas.toDataURL();
-              // iOS/Safari対応: 新しいタブで画像表示
-              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-              if (isIOS) {
-                const win = window.open();
-                win.document.write('<img src="' + dataUrl + '" style="width:100%;height:auto;" />');
+            html2canvas(appElement).then(async (canvas) => {
+              const dataUrl = canvas.toDataURL("image/png");
+              const response = await fetch(dataUrl);
+              const blob = await response.blob();
+              const file = new File([blob], fileName, { type: "image/png" });
+
+              if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                  await navigator.share({
+                    files: [file],
+                    title: fileName,
+                    text: "スクリーンショットを共有します",
+                  });
+                } catch (err) {
+                  alert("共有がキャンセルされました。");
+                }
               } else {
+                // fallback: 通常ダウンロード
                 const link = document.createElement("a");
                 link.download = fileName;
                 link.href = dataUrl;
