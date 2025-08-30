@@ -263,7 +263,7 @@
           <input type="checkbox" v-model="sixSixRules[activeSet]" />
         </div>
         <div class="screenshot">
-          <button @click="takeScreenshot">test5 Screen Shot</button>
+          <button @click="takeScreenshot">test6 Screen Shot</button>
         </div>
       </div>
 
@@ -967,7 +967,7 @@
               return;
             }
 
-            // スクリーンショットのために一時的にスタイルを変更する
+            // 一時的なスタイル変更
             const originalBodyBg = document.body.style.backgroundColor;
             const originalBodyColor = document.body.style.color;
             const scoreElement = document.querySelector(".score");
@@ -979,43 +979,84 @@
               scoreElement.style.color = "#000000";
             }
 
-            // html2canvasの処理を開始
+            // html2canvasでスクリーンショットを撮る
             html2canvas(appElement, {
-              useCORS: true, // CORSを有効にする
-              allowTaint: false, // 汚染されたキャンバスを許可しない
+              useCORS: true,
+              allowTaint: false,
+              backgroundColor: "#ffffff", // 背景を強制的に白に設定
             })
               .then((canvas) => {
-                const dataUrl = canvas.toDataURL("image/png");
-
-                // 新しいウィンドウで画像を表示
-                const newWindow = window.open();
-                if (newWindow) {
-                  newWindow.document.write(
-                    `<img src="${dataUrl}" style="max-width: 100%;">`
-                  );
-                  newWindow.document.title = "得失点チェックシート";
-                  // iOS Safariでの操作を促すアラート
-                  if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-                    alert("画像を長押しして保存してください。");
+                // CanvasからBlobを生成
+                canvas.toBlob(async (blob) => {
+                  // スタイルを元に戻す
+                  document.body.style.backgroundColor = originalBodyBg;
+                  document.body.style.color = originalBodyColor;
+                  if (scoreElement) {
+                    scoreElement.style.color = originalScoreColor;
                   }
-                } else {
-                  alert(
-                    "新しいウィンドウを開くことができませんでした。ポップアップブロックを確認してください。"
-                  );
-                }
+
+                  if (!blob) {
+                    alert("画像の生成に失敗しました。");
+                    return;
+                  }
+
+                  // ファイル名を設定
+                  const opponentName = playerInfo.opponentName || "相手選手";
+                  const setName = `${activeSet.value}セット`;
+                  const fileName = `vs_${opponentName}_${setName}.png`;
+                  const file = new File([blob], fileName, {
+                    type: "image/png",
+                  });
+
+                  // Web Share APIに対応しているか確認
+                  if (
+                    navigator.canShare &&
+                    navigator.canShare({ files: [file] })
+                  ) {
+                    try {
+                      await navigator.share({
+                        files: [file],
+                        title: fileName,
+                        text: "卓球得失点チェックシートのスクリーンショットです",
+                      });
+                    } catch (error) {
+                      if (
+                        error.name === "AbortError" ||
+                        error.name === "NotAllowedError"
+                      ) {
+                        console.log("共有がキャンセルされました。", error);
+                      } else {
+                        console.error("共有エラー:", error);
+                        fallbackDownload(blob, fileName);
+                      }
+                    }
+                  } else {
+                    // Web Share API非対応の場合の代替処理
+                    fallbackDownload(blob, fileName);
+                  }
+                }, "image/png");
               })
               .catch((err) => {
                 console.error("html2canvas error:", err);
                 alert("スクリーンショットの生成中にエラーが発生しました。");
-              })
-              .finally(() => {
-                // 成功・失敗にかかわらず、元のスタイルに戻す
+
+                // エラー発生時もスタイルを元に戻す
                 document.body.style.backgroundColor = originalBodyBg;
                 document.body.style.color = originalBodyColor;
                 if (scoreElement) {
                   scoreElement.style.color = originalScoreColor;
                 }
               });
+          };
+
+          // ダウンロードの代替処理関数
+          const fallbackDownload = (blob, fileName) => {
+            const link = document.createElement("a");
+            link.download = fileName;
+            link.href = URL.createObjectURL(blob);
+            link.click();
+            URL.revokeObjectURL(link.href);
+            alert("画像をダウンロードしました。");
           };
 
           return {
