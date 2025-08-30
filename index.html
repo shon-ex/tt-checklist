@@ -263,7 +263,7 @@
           <input type="checkbox" v-model="sixSixRules[activeSet]" />
         </div>
         <div class="screenshot">
-          <button @click="takeScreenshot">test2 Screen Shot</button>
+          <button @click="takeScreenshot">test3 Screen Shot</button>
         </div>
       </div>
 
@@ -656,7 +656,7 @@
             opponentName: "",
             opponentHand: "right",
           });
-          
+
           const sixSixRules = reactive({
             1: false,
             2: false,
@@ -680,27 +680,22 @@
             }))
           );
 
-          
           const handleSorRChange = (setNumber, pointIndex) => {
             const currentPoint =
               setsData.value[setNumber - 1].points[pointIndex];
             const baseValue = currentPoint.sorr.trim().toUpperCase();
 
-            
             if (baseValue !== "S" && baseValue !== "R") {
-              
               currentPoint.sorr = "";
               currentPoint.stage = null;
-              
+
               updateAllSetSR();
               return;
             }
 
-            
             if (setNumber === 1 && pointIndex === 0) {
               const base = baseValue;
 
-              
               for (let s = 1; s < setsData.value.length; s++) {
                 const otherSetFirstPoint = setsData.value[s].points[0];
                 const val = s % 2 === 0 ? base : base === "S" ? "R" : "S";
@@ -708,16 +703,12 @@
                 otherSetFirstPoint.stage = null;
               }
 
-              
               updateAllSetSR();
             } else {
-              
-              
               applySRAutoFillForSet(setNumber - 1);
             }
           };
 
-          
           const applySRAutoFillForSet = (setIndex) => {
             const currentSetPoints = setsData.value[setIndex].points;
             const firstSorR = currentSetPoints[0].sorr.trim().toUpperCase();
@@ -742,7 +733,7 @@
                 value = i % 2 === 0 ? base : alt;
               }
               point.sorr = value;
-              
+
               const currentStage = point.stage;
               if (
                 value === "S" &&
@@ -967,56 +958,76 @@
             }
           });
 
-          watch(
-            setsData,
-            () => {
-            },
-            { deep: true }
-          );
+          watch(setsData, () => {}, { deep: true });
 
           const takeScreenshot = () => {
-            const appElement = document.getElementById("app");
-            const opponentName = playerInfo.opponentName || "相手選手";
-            const setName = `${activeSet.value}セット`;
-            const fileName = `vs_${opponentName}_${setName}.png`;
+            // const appElement = document.getElementById("app");
+            // const opponentName = playerInfo.opponentName || "相手選手";
+            // const setName = `${activeSet.value}セット`;
+            // const fileName = `vs_${opponentName}_${setName}.png`;
 
-            const originalBackgroundColor = appElement.style.backgroundColor;
-            const originalColor = appElement.style.color;
-            const scoreElement = document.querySelector(".score");
-            const originalScoreColor = scoreElement.style.color;
+            // const originalBackgroundColor = appElement.style.backgroundColor;
+            // const originalColor = appElement.style.color;
+            // const scoreElement = document.querySelector(".score");
+            // const originalScoreColor = scoreElement.style.color;
 
-            appElement.style.backgroundColor = "#ffffff";
-            appElement.style.color = "#000000";
-            scoreElement.style.color = "#000000";
+            // appElement.style.backgroundColor = "#ffffff";
+            // appElement.style.color = "#000000";
+            // scoreElement.style.color = "#000000";
 
-            html2canvas(appElement).then(async (canvas) => {
-              const dataUrl = canvas.toDataURL("image/png");
-              const response = await fetch(dataUrl);
-              const blob = await response.blob();
-              const file = new File([blob], fileName, { type: "image/png" });
+            // html2canvas(appElement).then(async (canvas) => {
+            //   const dataUrl = canvas.toDataURL("image/png");
+            //   const response = await fetch(dataUrl);
+            //   const blob = await response.blob();
+            //   const file = new File([blob], fileName, { type: "image/png" });
 
-              if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                  await navigator.share({
-                    files: [file],
-                    title: fileName,
-                    text: "スクリーンショットを共有します",
-                  });
-                } catch (err) {
-                  alert("共有がキャンセルされました。");
+            //   if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            //     try {
+            //       await navigator.share({
+            //         files: [file],
+            //         title: fileName,
+            //         text: "スクリーンショットを共有します",
+            //       });
+            //     } catch (err) {
+            //       alert("共有がキャンセルされました。");
+            //     }
+            //   } else {
+            //     // fallback: 通常ダウンロード
+            //     const link = document.createElement("a");
+            //     link.download = fileName;
+            //     link.href = dataUrl;
+            //     link.click();
+            //   }
+
+            //   appElement.style.backgroundColor = originalBackgroundColor;
+            //   appElement.style.color = originalColor;
+            //   scoreElement.style.color = originalScoreColor;
+            // });
+
+            const viewportMeta = document.querySelector(
+              'meta[name="viewport"]'
+            );
+            let originalViewportContent;
+
+            if (viewportMeta) {
+              originalViewportContent = viewportMeta.getAttribute("content");
+              viewportMeta.setAttribute("content", "width=800"); // ここ大事１
+
+              html2canvas(document.getElementById("tableContainer")).then(
+                (canvas) => {
+                  viewportMeta.setAttribute("content", originalViewportContent); // ここ大事２
+
+                  const link = document.createElement("a");
+                  link.download = "diff-capture.png";
+                  link.href = canvas
+                    .toDataURL("image/png")
+                    .replace("image/png", "image/octet-stream");
+                  document.body.appendChild(link); // DOMに追加
+                  link.click();
+                  document.body.removeChild(link); // メモリリーク対策でDOMから削除
                 }
-              } else {
-                // fallback: 通常ダウンロード
-                const link = document.createElement("a");
-                link.download = fileName;
-                link.href = dataUrl;
-                link.click();
-              }
-
-              appElement.style.backgroundColor = originalBackgroundColor;
-              appElement.style.color = originalColor;
-              scoreElement.style.color = originalScoreColor;
-            });
+              );
+            }
           };
 
           return {
