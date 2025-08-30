@@ -263,7 +263,7 @@
           <input type="checkbox" v-model="sixSixRules[activeSet]" />
         </div>
         <div class="screenshot">
-          <button @click="takeScreenshot">test3 Screen Shot</button>
+          <button @click="takeScreenshot">test4 Screen Shot</button>
         </div>
       </div>
 
@@ -961,73 +961,59 @@
           watch(setsData, () => {}, { deep: true });
 
           const takeScreenshot = () => {
-            // const appElement = document.getElementById("app");
-            // const opponentName = playerInfo.opponentName || "相手選手";
-            // const setName = `${activeSet.value}セット`;
-            // const fileName = `vs_${opponentName}_${setName}.png`;
-
-            // const originalBackgroundColor = appElement.style.backgroundColor;
-            // const originalColor = appElement.style.color;
-            // const scoreElement = document.querySelector(".score");
-            // const originalScoreColor = scoreElement.style.color;
-
-            // appElement.style.backgroundColor = "#ffffff";
-            // appElement.style.color = "#000000";
-            // scoreElement.style.color = "#000000";
-
-            // html2canvas(appElement).then(async (canvas) => {
-            //   const dataUrl = canvas.toDataURL("image/png");
-            //   const response = await fetch(dataUrl);
-            //   const blob = await response.blob();
-            //   const file = new File([blob], fileName, { type: "image/png" });
-
-            //   if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            //     try {
-            //       await navigator.share({
-            //         files: [file],
-            //         title: fileName,
-            //         text: "スクリーンショットを共有します",
-            //       });
-            //     } catch (err) {
-            //       alert("共有がキャンセルされました。");
-            //     }
-            //   } else {
-            //     // fallback: 通常ダウンロード
-            //     const link = document.createElement("a");
-            //     link.download = fileName;
-            //     link.href = dataUrl;
-            //     link.click();
-            //   }
-
-            //   appElement.style.backgroundColor = originalBackgroundColor;
-            //   appElement.style.color = originalColor;
-            //   scoreElement.style.color = originalScoreColor;
-            // });
-
-            const viewportMeta = document.querySelector(
-              'meta[name="viewport"]'
-            );
-            let originalViewportContent;
-
-            if (viewportMeta) {
-              originalViewportContent = viewportMeta.getAttribute("content");
-              viewportMeta.setAttribute("content", "width=800"); // ここ大事１
-
-              html2canvas(document.getElementById("tableContainer")).then(
-                (canvas) => {
-                  viewportMeta.setAttribute("content", originalViewportContent); // ここ大事２
-
-                  const link = document.createElement("a");
-                  link.download = "diff-capture.png";
-                  link.href = canvas
-                    .toDataURL("image/png")
-                    .replace("image/png", "image/octet-stream");
-                  document.body.appendChild(link); // DOMに追加
-                  link.click();
-                  document.body.removeChild(link); // メモリリーク対策でDOMから削除
-                }
-              );
+            const appElement = document.getElementById("app");
+            if (!appElement) {
+              alert("スクリーンショットの対象要素が見つかりません。");
+              return;
             }
+
+            // スクリーンショットのために背景色と文字色を一時的に変更
+            const originalBodyBg = document.body.style.backgroundColor;
+            const originalBodyColor = document.body.style.color;
+            document.body.style.backgroundColor = "#ffffff";
+            document.body.style.color = "#000000";
+
+            // .score要素の文字色も一時的に変更
+            const scoreElement = document.querySelector(".score");
+            const originalScoreColor = scoreElement?.style.color;
+            if (scoreElement) {
+              scoreElement.style.color = "#000000";
+            }
+
+            html2canvas(appElement)
+              .then((canvas) => {
+                // 生成した画像をData URLとして取得
+                const dataUrl = canvas.toDataURL("image/png");
+
+                // 新しいウィンドウで画像を表示
+                const newWindow = window.open();
+                newWindow.document.write(
+                  `<img src="${dataUrl}" style="max-width: 100%;">`
+                );
+                newWindow.document.title = "得失点チェックシート";
+
+                // 元のスタイルに戻す
+                document.body.style.backgroundColor = originalBodyBg;
+                document.body.style.color = originalBodyColor;
+                if (scoreElement) {
+                  scoreElement.style.color = originalScoreColor;
+                }
+
+                // iOS Safariでの操作を促すアラート
+                if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                  alert("画像を長押しして保存してください。");
+                }
+              })
+              .catch((err) => {
+                console.error("html2canvas error:", err);
+                alert("スクリーンショットの生成中にエラーが発生しました。");
+                // エラー発生時も元のスタイルに戻す
+                document.body.style.backgroundColor = originalBodyBg;
+                document.body.style.color = originalBodyColor;
+                if (scoreElement) {
+                  scoreElement.style.color = originalScoreColor;
+                }
+              });
           };
 
           return {
