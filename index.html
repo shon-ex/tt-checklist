@@ -990,10 +990,18 @@
             scoreElement.style.color = "#000000";
 
             html2canvas(appElement).then((canvas) => {
-              const link = document.createElement("a");
-              link.download = fileName;
-              link.href = canvas.toDataURL();
-              link.click();
+              const dataUrl = canvas.toDataURL();
+              // iOS/Safari対応: 新しいタブで画像表示
+              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+              if (isIOS) {
+                const win = window.open();
+                win.document.write('<img src="' + dataUrl + '" style="width:100%;height:auto;" />');
+              } else {
+                const link = document.createElement("a");
+                link.download = fileName;
+                link.href = dataUrl;
+                link.click();
+              }
 
               appElement.style.backgroundColor = originalBackgroundColor;
               appElement.style.color = originalColor;
