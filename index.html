@@ -262,9 +262,6 @@
           <label class="player-info">6-6ルール</label>
           <input type="checkbox" v-model="sixSixRules[activeSet]" />
         </div>
-        <div class="screenshot">
-          <button @click="takeScreenshot">Screen Shot</button>
-        </div>
       </div>
 
       <div class="set-tabs">
@@ -973,34 +970,7 @@
             },
             { deep: true }
           );
-
-          const takeScreenshot = () => {
-            const appElement = document.getElementById("app");
-            const opponentName = playerInfo.opponentName || "相手選手";
-            const setName = `${activeSet.value}セット`;
-            const fileName = `vs_${opponentName}_${setName}.png`;
-
-            const originalBackgroundColor = appElement.style.backgroundColor;
-            const originalColor = appElement.style.color;
-            const scoreElement = document.querySelector(".score");
-            const originalScoreColor = scoreElement.style.color;
-
-            appElement.style.backgroundColor = "#ffffff";
-            appElement.style.color = "#000000";
-            scoreElement.style.color = "#000000";
-
-            html2canvas(appElement).then((canvas) => {
-              const link = document.createElement("a");
-              link.download = fileName;
-              link.href = canvas.toDataURL();
-              link.click();
-
-              appElement.style.backgroundColor = originalBackgroundColor;
-              appElement.style.color = originalColor;
-              scoreElement.style.color = originalScoreColor;
-            });
-          };
-
+          
           return {
             activeSet,
             playerInfo,
