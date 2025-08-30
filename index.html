@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>得失点チェックシート</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+      :root {
+        --border-color: #666;
+        --border-thick: 3px solid #999;
+        --bg-color-get: #1a3d5c;
+        --bg-color-lost: #5c1a1a;
+      }
+      body {
+        background-color: #000;
+        color: #fff;
+        font-family: "Yu Gothic", sans-serif;
+        margin: 1em;
+        font-size: 14px;
+      }
+      #app {
+        max-width: 1024px;
+        margin: 0 auto;
+      }
+      .set-tabs {
+        display: flex;
+        gap: 0.1em;
+        margin-bottom: 1em;
+      }
+      .set-tab {
+        flex: 1;
+        background-color: #444;
+        color: #fff;
+        border: none;
+        padding: 10px 0;
+        font-size: 1.1em;
+        cursor: pointer;
+        border-radius: 8px 8px 0 0;
+      }
+      .set-tab.active {
+        background-color: #ff3030;
+        font-weight: bold;
+      }
+      .title {
+        background-color: #ff3030;
+        padding: 8px;
+        margin-bottom: 1em;
+      }
+      .info-inputs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5em;
+        align-items: center;
+        margin-bottom: 1.5em;
+      }
+      .info-inputs input,
+      .info-inputs select {
+        background-color: #222;
+        color: #fff;
+        border: 1px solid var(--border-color);
+        padding: 5px;
+        border-radius: 4px;
+      }
+      .score {
+        font-size: 1.5em;
+        font-weight: bold;
+        margin: -0.5em 0 0.5em 0;
+        color: #fff;
+      }
+
+      .player-info {
+        font-weight: bold;
+        margin-right: 0.5em;
+      }
+
+      .periodic-aggre {
+        font-weight: bold;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        text-align: center;
+        background-color: #333;
+      }
+      th,
+      td {
+        border: 1px solid var(--border-color);
+        padding: 4px 2px;
+      }
+      .summary-tables-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2em;
+        margin-bottom: 1.5em;
+      }
+      .summary-tables-row h3 {
+        margin: 0 0 0.5em 0;
+        font-size: 1.2em;
+      }
+      .summary-tables-row table th,
+      .summary-tables-row table td {
+        padding: 8px 4px;
+      }
+      .summary-tables-row p {
+        margin-top: 0.5em;
+        font-weight: bold;
+        min-height: 1.2em;
+      }
+
+      .input-sheet-table {
+        font-size: 0.9em;
+      }
+
+      .input-sheet-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #222;
+      }
+      .input-sheet-table th {
+        background-color: #222;
+        padding: 5px 0;
+      }
+      .input-sheet-table input[type="text"] {
+        width: 95%;
+        background-color: #444;
+        color: white;
+        border: none;
+        text-align: center;
+        font-size: 1em;
+      }
+      .input-sheet-table input[type="radio"] {
+        transform: scale(1.6);
+        cursor: pointer;
+        vertical-align: middle;
+      }
+      .input-sheet-table input[type="checkbox"],
+      .info-inputs input[type="checkbox"] {
+        transform: scale(1.6);
+        cursor: pointer;
+        vertical-align: middle;
+      }
+
+      .input-sheet-table input[type="radio"]:checked,
+      .input-sheet-table input[type="checkbox"]:checked,
+      .info-inputs input[type="checkbox"]:checked {
+        accent-color: #ff3030;
+      }
+      .input-sheet-table input:disabled {
+        cursor: not-allowed;
+        opacity: 0.2;
+      }
+
+      .col-divider {
+        border-right: var(--border-thick);
+      }
+
+      .col-divider {
+        border-right: var(--border-thick);
+      }
+      .input-sheet-table td:first-child,
+      .input-sheet-table th:first-child {
+        border-left: var(--border-thick);
+      }
+      .header-divider {
+        border-top: var(--border-thick);
+      }
+
+      .input-sheet-table td:nth-child(2) {
+        width: 54px;
+        padding: 0;
+      }
+      .input-sheet-table td:nth-child(2) input[type="text"] {
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .from-to-controls {
+        margin-top: 1.5em;
+        margin-bottom: 1em;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+      }
+      .from-to-controls label {
+        white-space: nowrap;
+      }
+      .from-to-controls select {
+        background-color: #222;
+        color: #fff;
+        border: 1px solid var(--border-color);
+        padding: 5px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .from-to-controls button {
+        background-color: #859697;
+        color: #fff;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: background-color 0.3s;
+      }
+
+      .rally-include-toggle button {
+        background-color: #859697;
+        color: #fff;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9em;
+        margin-bottom: 1em;
+        transition: background-color 0.3s;
+      }
+
+      .screenshot button {
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: background-color 0.3s;
+        margin-left: 10px;
+        background-color: #4caf50;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 見たな！文句があるなら自分で作成してねｗ -->
+    <div id="app">
+      <h2 class="title">得失点チェックシート</h2>
+
+      <div class="info-inputs">
+        <div>
+          <label class="player-info">選手名:</label>
+          <input type="text" v-model="playerInfo.name" />
+        </div>
+        <div>
+          <label class="player-info">相手選手名:</label>
+          <input type="text" v-model="playerInfo.opponentName" />
+        </div>
+        <div>
+          <label class="player-info">相手の利き手:</label>
+          <select v-model="playerInfo.opponentHand">
+            <option value="right">右</option>
+            <option value="left">左</option>
+          </select>
+        </div>
+        <div>
+          <label class="player-info">6-6ルール</label>
+          <input type="checkbox" v-model="sixSixRules[activeSet]" />
+        </div>
+        <div class="screenshot">
+          <button @click="takeScreenshot">Screen Shot</button>
+        </div>
+      </div>
+
+      <div class="set-tabs">
+        <button
+          v-for="setNumber in 5"
+          :key="setNumber"
+          class="set-tab"
+          :class="{ active: activeSet === setNumber }"
+          @click="changeSet(setNumber)"
+        >
+          {{ setNumber }}セット
+        </button>
+      </div>
+
+      <div v-if="currentSetData">
+        <h4>点数</h4>
+        <p class="score">{{ score.get }} - {{ score.lost }}</p>
+        <div class="rally-include-toggle">
+          <button
+            @click="toggleRallyInclude"
+            :style="{ backgroundColor: rallyInclude ? '#54c1c7' : '#859697' }"
+          >
+            {{ rallyInclude ? 'ラリーも含む' : 'ラリーは含まない' }}
+          </button>
+        </div>
+
+        <div class="summary-tables-row">
+          <div>
+            <h3>サーブ時 得点率</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>バック</th>
+                  <th>ミドル</th>
+                  <th>フォア</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th>ショート</th>
+                  <td
+                    :style="getStatBgColor(serveStats['B-short'])"
+                    v-html="formatStat(serveStats['B-short'])"
+                  ></td>
+                  <td
+                    :style="getStatBgColor(serveStats['M-short'])"
+                    v-html="formatStat(serveStats['M-short'])"
+                  ></td>
+                  <td
+                    :style="getStatBgColor(serveStats['F-short'])"
+                    v-html="formatStat(serveStats['F-short'])"
+                  ></td>
+                </tr>
+                <tr>
+                  <th>ロング</th>
+                  <td
+                    :style="getStatBgColor(serveStats['B-long'])"
+                    v-html="formatStat(serveStats['B-long'])"
+                  ></td>
+                  <td
+                    :style="getStatBgColor(serveStats['M-long'])"
+                    v-html="formatStat(serveStats['M-long'])"
+                  ></td>
+                  <td
+                    :style="getStatBgColor(serveStats['F-long'])"
+                    v-html="formatStat(serveStats['F-long'])"
+                  ></td>
+                </tr>
+              </tbody>
+            </table>
+            <p style="color: crimson">{{ serveLowest }}</p>
+          </div>
+          <div>
+            <h3>レシーブ時 得点率</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>バック</th>
+                  <th>ミドル</th>
+                  <th>フォア</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th>ショート</th>
+                  <td
+                    :style="getStatBgColor(receiveStats['B-short'])"
+                    v-html="formatStat(receiveStats['B-short'])"
+                  ></td>
+                  <td
+                    :style="getStatBgColor(receiveStats['M-short'])"
+                    v-html="formatStat(receiveStats['M-short'])"
+                  ></td>
+                  <td
+                    :style="getStatBgColor(receiveStats['F-short'])"
+                    v-html="formatStat(receiveStats['F-short'])"
+                  ></td>
+                </tr>
+                <tr>
+                  <th>ロング</th>
+                  <td
+                    :style="getStatBgColor(receiveStats['B-long'])"
+                    v-html="formatStat(receiveStats['B-long'])"
+                  ></td>
+                  <td
+                    :style="getStatBgColor(receiveStats['M-long'])"
+                    v-html="formatStat(receiveStats['M-long'])"
+                  ></td>
+                  <td
+                    :style="getStatBgColor(receiveStats['F-long'])"
+                    v-html="formatStat(receiveStats['F-long'])"
+                  ></td>
+                </tr>
+              </tbody>
+            </table>
+            <p style="color: crimson">{{ receiveLowest }}</p>
+          </div>
+        </div>
+
+        <div class="from-to-controls">
+          <label for="fromSet" class="periodic-aggre">期間集計:</label>
+          <label for="fromSet" class="periodic-aggre">From</label>
+          <select id="fromSet" v-model.number="fromSet">
+            <option v-for="n in 5" :key="n" :value="n">{{ n }}セット</option>
+          </select>
+          <label for="toSet" class="periodic-aggre">To</label>
+          <select id="toSet" v-model.number="toSet">
+            <option v-for="n in 5" :key="n" :value="n">{{ n }}セット</option>
+          </select>
+          <button
+            @click="toggleFromToSummary"
+            :style="{ backgroundColor: showFromToSummary ? '#54c1c7' : '#859697' }"
+          >
+            {{ showFromToSummary ? '期間集計を非表示' : '期間集計を表示' }}
+          </button>
+        </div>
+
+        <div class="summary-tables-row" v-if="showFromToSummary">
+          <div>
+            <h3>サーブ時 得点率 (From-To)</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>バック</th>
+                  <th>ミドル</th>
+                  <th>フォア</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th>ショート</th>
+                  <td
+                    :style="getStatBgColor(fromToServeStats['B-short'])"
+                    v-html="formatStat(fromToServeStats['B-short'])"
+                  ></td>
+                  <td
+                    :style="getStatBgColor(fromToServeStats['M-short'])"
+                    v-html="formatStat(fromToServeStats['M-short'])"
+                  ></td>
+                  <td
+                    :style="getStatBgColor(fromToServeStats['F-short'])"
+                    v-html="formatStat(fromToServeStats['F-short'])"
+                  ></td>
+                </tr>
+                <tr>
+                  <th>ロング</th>
+                  <td
+                    :style="getStatBgColor(fromToServeStats['B-long'])"
+                    v-html="formatStat(fromToServeStats['B-long'])"
+                  ></td>
+                  <td
+                    :style="getStatBgColor(fromToServeStats['M-long'])"
+                    v-html="formatStat(fromToServeStats['M-long'])"
+                  ></td>
+                  <td
+                    :style="getStatBgColor(fromToServeStats['F-long'])"
+                    v-html="formatStat(fromToServeStats['F-long'])"
+                  ></td>
+                </tr>
+              </tbody>
+            </table>
+            <p style="color: crimson">{{ fromToServeLowest }}</p>
+          </div>
+          <div>
+            <h3>レシーブ時 得点率 (From-To)</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>バック</th>
+                  <th>ミドル</th>
+                  <th>フォア</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th>ショート</th>
+                  <td
+                    :style="getStatBgColor(fromToReceiveStats['B-short'])"
+                    v-html="formatStat(fromToReceiveStats['B-short'])"
+                  ></td>
+                  <td
+                    :style="getStatBgColor(fromToReceiveStats['M-short'])"
+                    v-html="formatStat(fromToReceiveStats['M-short'])"
+                  ></td>
+                  <td
+                    :style="getStatBgColor(fromToReceiveStats['F-short'])"
+                    v-html="formatStat(fromToReceiveStats['F-short'])"
+                  ></td>
+                </tr>
+                <tr>
+                  <th>ロング</th>
+                  <td
+                    :style="getStatBgColor(fromToReceiveStats['B-long'])"
+                    v-html="formatStat(fromToReceiveStats['B-long'])"
+                  ></td>
+                  <td
+                    :style="getStatBgColor(fromToReceiveStats['M-long'])"
+                    v-html="formatStat(fromToReceiveStats['M-long'])"
+                  ></td>
+                  <td
+                    :style="getStatBgColor(fromToReceiveStats['F-long'])"
+                    v-html="formatStat(fromToReceiveStats['F-long'])"
+                  ></td>
+                </tr>
+              </tbody>
+            </table>
+            <p style="color: crimson">{{ fromToReceiveLowest }}</p>
+          </div>
+        </div>
+
+        <table class="input-sheet-table">
+          <thead>
+            <tr class="header-divider">
+              <th rowspan="2" class="col-divider">No.</th>
+              <th rowspan="2" class="col-divider">S/R</th>
+              <th colspan="3">種類</th>
+              <th rowspan="2" class="col-divider">ロング</th>
+              <th colspan="3">サーブ</th>
+              <th colspan="2" class="col-divider">レシーブ</th>
+              <th rowspan="2" class="col-divider" style="font-size: 1.2em">
+                得点<br />
+                <span
+                  style="
+                    font-size: 0.8em;
+                    color: #ff3030;
+                    font-weight: bold;
+                    display: block;
+                    margin-top: 2px;
+                  "
+                  >{{ score.get }}</span
+                >
+              </th>
+            </tr>
+            <tr class="header-divider">
+              <th>F</th>
+              <th>M</th>
+              <th class="col-divider">B</th>
+              <th>1球目</th>
+              <th>3球目</th>
+              <th class="col-divider">5球目以上</th>
+              <th>2球目</th>
+              <th class="col-divider">4球目以上</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(point, index) in currentSetData.points" :key="index">
+              <td class="col-divider">{{ index + 1 }}</td>
+              <td class="col-divider">
+                <select
+                  v-model="point.sorr"
+                  @change="handleSorRChange(activeSet, index)"
+                  style="
+                    width: 100%;
+                    background-color: #222;
+                    color: #fff;
+                    border: 1px solid var(--border-color);
+                    border-radius: 4px;
+                    text-align: center;
+                  "
+                >
+                  <option value="">選択</option>
+                  <option value="S">S</option>
+                  <option value="R">R</option>
+                </select>
+              </td>
+              <td>
+                <input
+                  type="radio"
+                  :value="'F'"
+                  v-model="point.type"
+                  :name="'type-' + activeSet + '-' + index"
+                />
+              </td>
+              <td>
+                <input
+                  type="radio"
+                  :value="'M'"
+                  v-model="point.type"
+                  :name="'type-' + activeSet + '-' + index"
+                />
+              </td>
+              <td class="col-divider">
+                <input
+                  type="radio"
+                  :value="'B'"
+                  v-model="point.type"
+                  :name="'type-' + activeSet + '-' + index"
+                />
+              </td>
+              <td class="col-divider">
+                <input type="checkbox" v-model="point.long" />
+              </td>
+              <td>
+                <input
+                  type="radio"
+                  value="1"
+                  v-model="point.stage"
+                  :name="'stage-' + activeSet + '-' + index"
+                  :disabled="point.sorr.toUpperCase() !== 'S'"
+                />
+              </td>
+              <td>
+                <input
+                  type="radio"
+                  value="3"
+                  v-model="point.stage"
+                  :name="'stage-' + activeSet + '-' + index"
+                  :disabled="point.sorr.toUpperCase() !== 'S'"
+                />
+              </td>
+              <td class="col-divider">
+                <input
+                  type="radio"
+                  value="5"
+                  v-model="point.stage"
+                  :name="'stage-' + activeSet + '-' + index"
+                  :disabled="point.sorr.toUpperCase() !== 'S'"
+                />
+              </td>
+              <td>
+                <input
+                  type="radio"
+                  value="2"
+                  v-model="point.stage"
+                  :name="'stage-' + activeSet + '-' + index"
+                  :disabled="point.sorr.toUpperCase() !== 'R'"
+                />
+              </td>
+              <td class="col-divider">
+                <input
+                  type="radio"
+                  value="4"
+                  v-model="point.stage"
+                  :name="'stage-' + activeSet + '-' + index"
+                  :disabled="point.sorr.toUpperCase() !== 'R'"
+                />
+              </td>
+              <td class="col-divider">
+                <input
+                  type="checkbox"
+                  :checked="point.result === 'get'"
+                  @change="point.result = point.result === 'get' ? null : 'get'"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+      const { createApp, ref, reactive, computed, watch } = Vue;
+
+      createApp({
+        setup() {
+          const activeSet = ref(1);
+          const fromSet = ref(1);
+          const toSet = ref(5);
+          const showFromToSummary = ref(false);
+          const includeRally = ref(false);
+          const rallyInclude = ref(false);
+
+          const playerInfo = reactive({
+            name: "",
+            opponentName: "",
+            opponentHand: "right",
+          });
+          
+          const sixSixRules = reactive({
+            1: false,
+            2: false,
+            3: false,
+            4: false,
+            5: false,
+          });
+
+          const createEmptyPoint = () => ({
+            sorr: "",
+            type: "",
+            long: false,
+            stage: null,
+            result: "",
+          });
+
+          const setsData = ref(
+            Array.from({ length: 5 }, (_, i) => ({
+              setNumber: i + 1,
+              points: Array.from({ length: 41 }, createEmptyPoint),
+            }))
+          );
+
+          
+          const handleSorRChange = (setNumber, pointIndex) => {
+            const currentPoint =
+              setsData.value[setNumber - 1].points[pointIndex];
+            const baseValue = currentPoint.sorr.trim().toUpperCase();
+
+            
+            if (baseValue !== "S" && baseValue !== "R") {
+              
+              currentPoint.sorr = "";
+              currentPoint.stage = null;
+              
+              updateAllSetSR();
+              return;
+            }
+
+            
+            if (setNumber === 1 && pointIndex === 0) {
+              const base = baseValue;
+
+              
+              for (let s = 1; s < setsData.value.length; s++) {
+                const otherSetFirstPoint = setsData.value[s].points[0];
+                const val = s % 2 === 0 ? base : base === "S" ? "R" : "S";
+                otherSetFirstPoint.sorr = val;
+                otherSetFirstPoint.stage = null;
+              }
+
+              
+              updateAllSetSR();
+            } else {
+              
+              
+              applySRAutoFillForSet(setNumber - 1);
+            }
+          };
+
+          
+          const applySRAutoFillForSet = (setIndex) => {
+            const currentSetPoints = setsData.value[setIndex].points;
+            const firstSorR = currentSetPoints[0].sorr.trim().toUpperCase();
+
+            if (firstSorR !== "S" && firstSorR !== "R") {
+              currentSetPoints.forEach((point) => {
+                point.sorr = "";
+                point.stage = null;
+              });
+              return;
+            }
+
+            const base = firstSorR;
+            const alt = base === "S" ? "R" : "S";
+
+            currentSetPoints.forEach((point, i) => {
+              let value;
+              if (i < 20) {
+                const blockIndex = Math.floor(i / 2);
+                value = blockIndex % 2 === 0 ? base : alt;
+              } else {
+                value = i % 2 === 0 ? base : alt;
+              }
+              point.sorr = value;
+              
+              const currentStage = point.stage;
+              if (
+                value === "S" &&
+                (currentStage === "2" || currentStage === "4")
+              ) {
+                point.stage = null;
+              } else if (
+                value === "R" &&
+                (currentStage === "1" ||
+                  currentStage === "3" ||
+                  currentStage === "5")
+              ) {
+                point.stage = null;
+              }
+            });
+          };
+
+          const updateAllSetSR = () => {
+            setsData.value.forEach((set, setIndex) => {
+              applySRAutoFillForSet(setIndex);
+            });
+          };
+
+          const currentSetData = computed(() =>
+            setsData.value.find((set) => set.setNumber === activeSet.value)
+          );
+
+          const score = computed(() => {
+            if (!currentSetData.value) return { get: 0, lost: 0 };
+            let baseGet = 0,
+              baseLost = 0;
+            if (sixSixRules[activeSet.value]) {
+              baseGet = 6;
+              baseLost = 6;
+            }
+            const result = currentSetData.value.points.reduce(
+              (acc, point) => {
+                if (
+                  point.type === "F" ||
+                  point.type === "M" ||
+                  point.type === "B"
+                ) {
+                  if (point.result === "get") acc.get++;
+                  else acc.lost++;
+                }
+                return acc;
+              },
+              { get: baseGet, lost: baseLost }
+            );
+            return result;
+          });
+
+          const getStatsBySituation = (situation, specificPoints = null) => {
+            const pointsToProcess =
+              specificPoints || currentSetData.value?.points;
+            if (!pointsToProcess) return {};
+
+            const targetSit = situation === "serve" ? "S" : "R";
+            return pointsToProcess
+              .filter((p) => {
+                if (p.sorr.toUpperCase() !== targetSit || !p.type) {
+                  return false;
+                }
+
+                if (!rallyInclude.value) {
+                  if (
+                    (p.sorr.toUpperCase() === "S" && p.stage === "5") ||
+                    (p.sorr.toUpperCase() === "R" && p.stage === "4")
+                  ) {
+                    return false;
+                  }
+                }
+
+                return true;
+              })
+              .reduce((stats, point) => {
+                const courseKey = `${point.type}-${
+                  point.long ? "long" : "short"
+                }`;
+                if (!stats[courseKey])
+                  stats[courseKey] = { point: 0, count: 0 };
+                stats[courseKey].count++;
+                if (point.result === "get") {
+                  stats[courseKey].point++;
+                } else {
+                  stats[courseKey].point;
+                }
+                return stats;
+              }, {});
+          };
+
+          const serveStats = computed(() => getStatsBySituation("serve"));
+          const receiveStats = computed(() => getStatsBySituation("receive"));
+
+          const getFromToPoints = computed(() => {
+            const startSetIndex = fromSet.value - 1;
+            const endSetIndex = toSet.value - 1;
+
+            if (startSetIndex > endSetIndex) {
+              return [];
+            }
+
+            let allPointsInRage = [];
+            for (let i = startSetIndex; i <= endSetIndex; i++) {
+              if (setsData.value[i]) {
+                allPointsInRage = allPointsInRage.concat(
+                  setsData.value[i].points
+                );
+              }
+            }
+            return allPointsInRage;
+          });
+
+          const fromToServeStats = computed(() => {
+            const combinedPoints = getFromToPoints.value;
+            return getStatsBySituation("serve", combinedPoints);
+          });
+
+          const fromToReceiveStats = computed(() => {
+            const combinedPoints = getFromToPoints.value;
+            return getStatsBySituation("receive", combinedPoints);
+          });
+
+          const courseMap = {
+            "F-short": "フォア前",
+            "F-long": "フォアロング",
+            "M-short": "ミドル前",
+            "M-long": "ミドルロング",
+            "B-short": "バック前",
+            "B-long": "バックロング",
+          };
+
+          const findLowestStat = (stats, type) => {
+            const rates = Object.entries(stats)
+              .filter(([_, data]) => data.count >= 2)
+              .map(([course, data]) => ({
+                course,
+                rate: data.point / data.count,
+              }));
+
+            if (rates.length === 0) return "";
+
+            if (rates.every((r) => r.rate === 1)) return "";
+
+            const minRate = Math.min(...rates.map((r) => r.rate));
+
+            const lowestCourses = rates
+              .filter((r) => Math.abs(r.rate - minRate) < 0.001)
+              .map((r) => courseMap[r.course]);
+
+            const prefix = "失点しているコース";
+            return `${prefix}は ${lowestCourses.join("・")} です`;
+          };
+
+          const serveLowest = computed(() =>
+            findLowestStat(serveStats.value, "serve")
+          );
+          const receiveLowest = computed(() =>
+            findLowestStat(receiveStats.value, "receive")
+          );
+
+          const fromToServeLowest = computed(() =>
+            findLowestStat(fromToServeStats.value, "serve")
+          );
+          const fromToReceiveLowest = computed(() =>
+            findLowestStat(fromToReceiveStats.value, "receive")
+          );
+
+          const changeSet = (setNumber) => {
+            activeSet.value = setNumber;
+          };
+
+          const toggleFromToSummary = () => {
+            showFromToSummary.value = !showFromToSummary.value;
+          };
+
+          const toggleRallyInclude = () => {
+            rallyInclude.value = !rallyInclude.value;
+          };
+
+          const formatStat = (stat) => {
+            if (!stat || stat.count === 0) {
+              return `0%<br><span style='font-size:0.9em;'>(${
+                stat ? stat.point : 0
+              }/${stat ? stat.count : 0})</span>`;
+            }
+
+            if (stat.count < 2) {
+              return `0%<br><span style='font-size:0.9em;'>(${stat.point}/${stat.count})</span>`;
+            }
+
+            const rate = Math.floor((stat.point / stat.count) * 100);
+            return `${rate}%<br><span style='font-size:0.9em;'>(${stat.point}/${stat.count})</span>`;
+          };
+
+          const getStatBgColor = (stat) => {
+            if (!stat || stat.count < 2) return {};
+
+            const rate = stat.point / stat.count;
+            if (rate > 2 / 3) return { backgroundColor: "var(--bg-color-get)" };
+            if (rate <= 1 / 3)
+              return { backgroundColor: "var(--bg-color-lost)" };
+            return {};
+          };
+
+          const handleRadioClick = (point, field, value) => {
+            if (point[field] === value) {
+              point[field] = null;
+            } else {
+              point[field] = value;
+            }
+          };
+
+          watch(fromSet, (newVal) => {
+            if (newVal > toSet.value) {
+              toSet.value = newVal;
+            }
+          });
+          watch(toSet, (newVal) => {
+            if (newVal < fromSet.value) {
+              fromSet.value = newVal;
+            }
+          });
+
+          watch(
+            setsData,
+            () => {
+            },
+            { deep: true }
+          );
+
+          const takeScreenshot = () => {
+            const appElement = document.getElementById("app");
+            const opponentName = playerInfo.opponentName || "相手選手";
+            const setName = `${activeSet.value}セット`;
+            const fileName = `vs_${opponentName}_${setName}.png`;
+
+            const originalBackgroundColor = appElement.style.backgroundColor;
+            const originalColor = appElement.style.color;
+            const scoreElement = document.querySelector(".score");
+            const originalScoreColor = scoreElement.style.color;
+
+            appElement.style.backgroundColor = "#ffffff";
+            appElement.style.color = "#000000";
+            scoreElement.style.color = "#000000";
+
+            html2canvas(appElement).then((canvas) => {
+              const link = document.createElement("a");
+              link.download = fileName;
+              link.href = canvas.toDataURL();
+              link.click();
+
+              appElement.style.backgroundColor = originalBackgroundColor;
+              appElement.style.color = originalColor;
+              scoreElement.style.color = originalScoreColor;
+            });
+          };
+
+          return {
+            activeSet,
+            playerInfo,
+            setsData,
+            currentSetData,
+            score,
+            serveStats,
+            receiveStats,
+            serveLowest,
+            receiveLowest,
+            changeSet,
+            formatStat,
+            getStatBgColor,
+            handleSorRChange,
+            fromSet,
+            toSet,
+            showFromToSummary,
+            toggleFromToSummary,
+            fromToServeStats,
+            fromToReceiveStats,
+            fromToServeLowest,
+            fromToReceiveLowest,
+            includeRally,
+            toggleRallyInclude,
+            rallyInclude,
+            takeScreenshot,
+            sixSixRules,
+          };
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>
